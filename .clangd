@@ -1,0 +1,4 @@
+CompileFlags:
+  Add: [-I/usr/lib/gcc/arm-none-eabi/14.1.0/include,
+        -I/usr/lib/gcc/arm-none-eabi/14.1.0/include-fixed,
+        -I/usr/arm-none-eabi/include]
