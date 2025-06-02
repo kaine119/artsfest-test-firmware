@@ -29,13 +29,6 @@ const float FREQ_TABLE[16] = {
     329.63  // E4
 };
 
-#define SAMPLES_PER_BUFFER 256
-
-#define I2S_DATA_PIN 7
-#define I2S_CLOCK_PIN_BASE 8
-
-#define I2S_SAMPLE_RATE 48000
-
 bi_decl(bi_3pins_with_names(PICO_AUDIO_I2S_DATA_PIN, "I2S DIN", PICO_AUDIO_I2S_CLOCK_PIN_BASE, "I2S BCK", PICO_AUDIO_I2S_CLOCK_PIN_BASE+1, "I2S LRCK"));
 
 struct audio_buffer_pool *init_audio() {
