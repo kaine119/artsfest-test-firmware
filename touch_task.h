@@ -20,6 +20,8 @@ uint16_t touch_fetch_contacted_pads();
 
 void touch_read_register(uint8_t reg_addr, uint8_t* rxdata, size_t size);
 void touch_write_register(uint8_t reg_addr, uint8_t* txdata, size_t size);
+void touch_write_ctrl_cmd(uint8_t cmd);
+void touch_reset_device();
 
 void touch_task(void* params);
 

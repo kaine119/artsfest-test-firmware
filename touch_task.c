@@ -54,9 +54,7 @@ void touch_initialize_device() {
     uint8_t bytes_to_write[5];
     uint8_t read_result[5];
 
-    // Reset device
-    gpio_put(TOUCH_RST_PIN, false);
-    gpio_put(TOUCH_RST_PIN, true);
+    touch_reset_device();
     
     // SENSOR_EN: Enable all sensors
     bytes_to_write[0] = 0b11111111;
@@ -91,8 +89,7 @@ void touch_initialize_device() {
     touch_write_register(0x4f, bytes_to_write, 1);
     
     // CTRL_CMD: Command device to calculate CRC
-    bytes_to_write[0] = 3;
-    touch_write_register(0x86, bytes_to_write, 1);
+    touch_write_ctrl_cmd(3);
 
     // CALC_CRC: Get computed CRC from previous step
     touch_read_register(0x94, read_result, 2);
@@ -103,16 +100,9 @@ void touch_initialize_device() {
     bytes_to_write[1] = read_result[1];
     touch_write_register(0x7e, bytes_to_write, 2);
 
-    // CTRL_CMD: Write config to device memory
-    bytes_to_write[0] = 2;
-    touch_write_register(0x86, bytes_to_write, 1);
-
-    touch_read_register(0x88, read_result, 2);
-    printf("reg 0x88 (CTRL_CMD_STATUS): %08b %08b\n", read_result[0], read_result[1]);
-
-    // Reset device
-    gpio_put(TOUCH_RST_PIN, false);
-    gpio_put(TOUCH_RST_PIN, true);
+    // Save configuration data to NV memory
+    touch_write_ctrl_cmd(2);
+    touch_reset_device();
 
     // Print status
     touch_read_register(0x00, read_result, 2);
@@ -161,4 +151,23 @@ void touch_write_register(uint8_t reg_addr, uint8_t* txdata, size_t size) {
         write_result = i2c_write_burst_blocking(i2c_default, TOUCH_SLAVE_ADDR, &reg_addr, 1);
     }
     i2c_write_blocking(i2c_default, TOUCH_SLAVE_ADDR, txdata, size, false);
+}
+
+void touch_write_ctrl_cmd(uint8_t cmd) {
+    uint8_t byte_tx = cmd;
+    uint8_t byte_rx = 255;
+
+    // Write command to CTRL_CMD register
+    touch_write_register(0x86, &byte_tx, 1);
+
+    // Wait for device to clear CTRL_CMD register before returning
+    while (byte_rx != 0) {
+        touch_read_register(0x86, &byte_rx, 1);
+    }
+}
+
+void touch_reset_device() {
+    // Reset device
+    gpio_put(TOUCH_RST_PIN, false);
+    gpio_put(TOUCH_RST_PIN, true);
 }
