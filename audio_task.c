@@ -94,6 +94,7 @@ static void handle_key_event(uint16_t key_event) {
 }
 
 int16_t calculate_sample() {
+    int max_volume = 18000;
     static float vol = 0;
     static float freq = 880;
     uint mask;
@@ -108,23 +109,28 @@ int16_t calculate_sample() {
     // Volume is changed every sample by a increment/decrement
     // calculated based on an attack time.
     static uint attack_sample_count = 0;
-    float attack = 0.1;
+    float attack = 0.01;
     float attack_sample_total = attack * I2S_SAMPLE_RATE; // == attack / sample_period
     float attack_progress = attack_sample_count / attack_sample_total;
+    float attack_incr = max_volume / attack_sample_total;
 
     static uint decay_sample_count = 0;
     float decay = 1;
     float decay_sample_total = decay * I2S_SAMPLE_RATE; // == decay / sample_period
     float decay_progress = decay_sample_count / decay_sample_total;
+    float decay_incr = max_volume / decay_sample_total;
 
 
     if (note_to_play != -1 && attack_sample_count <= attack_sample_total) {
         decay_sample_count = 0;
+        // vol = MIN(max_volume, vol + attack_incr);
         vol = MAX(vol, attack_progress * 32767);
         attack_sample_count++;
     } else if (note_to_play == -1 && decay_sample_count <= decay_sample_total) {
         attack_sample_count = 0;
+        // vol = MAX(0, vol - decay_incr);
         vol = MIN(vol, 32767 - decay_progress * 32767);
+
         decay_sample_count++;
     }
 
