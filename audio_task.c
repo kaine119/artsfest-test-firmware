@@ -10,24 +10,26 @@
 
 #include <audio_task.h>
 
-const float FREQ_TABLE[16] = { 
+const float FREQ_TABLE[12] = { 
     261.63, // C4
     277.18, // C#4
     293.66, // D4
     311.13, // D#4
-    440,    // misc
-    440,    // misc
-    440,    // misc
-    440,    // misc
-    493.88, // B4
-    466, // Bb4
-    440,    // A4
-    415.3,  // G#4
-    392,    // G4
-    369.99, // F#4
+    329.63, // E4
     349.23, // F4
-    329.63  // E4
+    369.99, // F#4
+    392,    // G4
+    415.3,  // G#4
+    440,    // A4
+    466,    // Bb4
+    493.88, // B4
 };
+
+const uint8_t key_order[12] = {0, 1, 2, 3, 15, 14, 13, 12, 11, 10, 9, 8};
+
+static int8_t note_to_play = -1; // -1 if no notes
+static int octave = 0;
+static bool octave_pressed = false;
 
 bi_decl(bi_3pins_with_names(PICO_AUDIO_I2S_DATA_PIN, "I2S DIN", PICO_AUDIO_I2S_CLOCK_PIN_BASE, "I2S BCK", PICO_AUDIO_I2S_CLOCK_PIN_BASE+1, "I2S LRCK"));
 
@@ -70,40 +72,57 @@ struct audio_buffer_pool *init_audio() {
     return producer_pool;
 }
 
+static void handle_key_event(uint16_t key_event) {
 
-int16_t calculate_sample(uint16_t key_event) {
+    if (key_event == 0) {
+        octave_pressed = false;
+        note_to_play = -1;
+    }
+    else if ((key_event & (1 << 6)) && !octave_pressed) {
+        octave_pressed = true;
+        octave -= 1;
+    } else if ((key_event & (1 << 7)) && !octave_pressed) {
+        octave_pressed = true;
+        octave += 1;
+    } else {
+        for (int i = 0; i < 12; i++) {
+            if (key_event & (1 << key_order[i])) {
+                note_to_play = i;
+            }
+        }
+    }
+}
+
+int16_t calculate_sample() {
     static float vol = 0;
     static float freq = 880;
     uint mask;
 
     // Get tone frequency from key-freq map
-    if (key_event != 0) {
-        for (int i = 0; i < 16; i++) {
-            if (key_event & (1 << i)) {
-                freq = FREQ_TABLE[i];
-            }
-        }
+    if (note_to_play != -1) {
+        if (octave >= 0) freq = FREQ_TABLE[note_to_play] * (1 << octave);
+        else             freq = FREQ_TABLE[note_to_play] / (1 << -octave);
     }
 
     // Increase / decrease volume over time for attack and decay envelopes
     // Volume is changed every sample by a increment/decrement
     // calculated based on an attack time.
     static uint attack_sample_count = 0;
-    float attack = 0.01;
+    float attack = 0.1;
     float attack_sample_total = attack * I2S_SAMPLE_RATE; // == attack / sample_period
     float attack_progress = attack_sample_count / attack_sample_total;
 
     static uint decay_sample_count = 0;
-    float decay = 0.05;
+    float decay = 1;
     float decay_sample_total = decay * I2S_SAMPLE_RATE; // == decay / sample_period
     float decay_progress = decay_sample_count / decay_sample_total;
 
 
-    if (key_event != 0 && attack_sample_count <= attack_sample_total) {
+    if (note_to_play != -1 && attack_sample_count <= attack_sample_total) {
         decay_sample_count = 0;
         vol = MAX(vol, attack_progress * 32767);
         attack_sample_count++;
-    } else if (key_event == 0 && decay_sample_count <= decay_sample_total) {
+    } else if (note_to_play == -1 && decay_sample_count <= decay_sample_total) {
         attack_sample_count = 0;
         vol = MIN(vol, 32767 - decay_progress * 32767);
         decay_sample_count++;
@@ -127,17 +146,16 @@ void audio_task(void* params) {
 
     QueueHandle_t key_event_queue = (QueueHandle_t) params;
     uint16_t key_event;
-    uint16_t last_key_event;
 
     while (true) {
         if (xQueueReceive(key_event_queue, &key_event, 0) == pdPASS) {
-            last_key_event = key_event;
+            handle_key_event(key_event);
         }
 
         struct audio_buffer *buffer = take_audio_buffer(ap, true);
         int16_t *samples = (int16_t *) buffer->buffer->bytes;
         for (uint i = 0; i < buffer->max_sample_count; i++) {
-            samples[i] = calculate_sample(last_key_event);
+            samples[i] = calculate_sample();
         }
         buffer->sample_count = buffer->max_sample_count;
         give_audio_buffer(ap, buffer);
