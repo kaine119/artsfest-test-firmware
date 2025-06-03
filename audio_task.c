@@ -124,12 +124,12 @@ int16_t calculate_sample() {
     if (note_to_play != -1 && attack_sample_count <= attack_sample_total) {
         decay_sample_count = 0;
         // vol = MIN(max_volume, vol + attack_incr);
-        vol = MAX(vol, attack_progress * 32767);
+        vol = MAX(vol, attack_progress * max_volume);
         attack_sample_count++;
     } else if (note_to_play == -1 && decay_sample_count <= decay_sample_total) {
         attack_sample_count = 0;
         // vol = MAX(0, vol - decay_incr);
-        vol = MIN(vol, 32767 - decay_progress * 32767);
+        vol = MIN(vol, max_volume - decay_progress * max_volume);
 
         decay_sample_count++;
     }
