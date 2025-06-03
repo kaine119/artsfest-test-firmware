@@ -140,8 +140,8 @@ int16_t calculate_sample() {
         count = 0;
     }
     count++;
-    return vol * sinf(2 * M_PI * count / total_waveform_samples);
-    // return vol * (count / total_waveform_samples);
+    return round(vol * sinf(2 * M_PI * count / total_waveform_samples));
+    // return round(vol * (count / total_waveform_samples));
 }
 
 void audio_task(void* params) {
