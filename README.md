@@ -7,7 +7,17 @@ extremely not-discount stylophone lmao
 This project is built on the Raspberry Pi Pico SDK, you'll need an environment for that set up first.
 
 * Follow the instructions [here](https://rptl.io/pico-get-started) to get your Pico SDK environment set up
-* If you're using the vscode extension, use the buttons in vscode
+* Clone [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel) next to the pico-sdk folder.
+   * If you're using the vscode extension, clone it to `~/.pico-sdk/sdk`
+
+        The folder should look like
+        ```
+        .pico-sdk
+        \-- sdk
+            |-- 2.x.x
+            \-- FreeRTOS-Kernel
+        ```
+* If you're using the vscode extension, use the buttons in vscode to "Configure CMake", then try to "Compile Project"
 * If not:
     * You'll need to have `PICO_SDK_PATH` on your $PATH, as per the setup instructions
     * To build (similar to most cmake projects):
