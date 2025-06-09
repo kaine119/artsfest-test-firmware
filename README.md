@@ -84,7 +84,7 @@ Pinout:
 | BCK         | GP8                         | 
 | DIN         | GP7                         | 
 | LRC (LRCLK) | GP9                         | 
-| XSM (XSMT)  | pull up to 5V to unmute DAC | 
+| XSM (XSMT)  | pull up to 3v3 to unmute DAC| 
 | 5V          | 5V - speaker amp power      | 
 | (on the other side:) |
 | S_S (speaker shutdown) | pull up to 5V to unmute speaker amp |
