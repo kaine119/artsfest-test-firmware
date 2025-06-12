@@ -7,10 +7,10 @@
 #include "task.h"
 
 //Pin allocations
-#define BUTTON1_PIN 18 //octUp
-#define BUTTON2_PIN 19 //octDown
-#define BUTTON3_PIN 20 //toneSel
-#define ADC_PIN 29 //vol
+#define OCT_UP 18
+#define OCT_DOWN 19
+#define TONE_SEL 20
+#define VOL_PIN 29 
 
 #define DEBOUNCE_INT 50
 
@@ -21,6 +21,12 @@ QueueHandle_t key_event_queue;
 
 volatile absolute_time_t lastClick;
 
+void setupButton(uint gpio){
+    gpio_init(gpio);
+    gpio_set_dir(gpio, GPIO_IN);
+    gpio_pull_up(gpio);
+}
+
 void buttonIrq(uint gpio, uint32_t events) {
     //Deboucing
     absolute_time_t now = get_absolute_time();
@@ -28,12 +34,12 @@ void buttonIrq(uint gpio, uint32_t events) {
         lastClick = now;
 
         //Check which button triggered the interupt
-        if(gpio == BUTTON1_PIN){
-            printf("Button 1 \n");
-        }else if(gpio == BUTTON2_PIN){
-            printf("Button 2 \n");
-        }else if(gpio == BUTTON3_PIN){
-            printf("Button 3 \n");
+        if(gpio == OCT_UP){
+            printf("Octave up \n");
+        }else if(gpio == OCT_DOWN){
+            printf("Octave down \n");
+        }else if(gpio == TONE_SEL){
+            printf("Tone change \n");
         }else{
             printf("Interupt \n");
         }
@@ -43,15 +49,15 @@ void buttonIrq(uint gpio, uint32_t events) {
 int main() {
     stdio_init_all();
 
-    gpio_init(BUTTON1_PIN);
-    gpio_set_dir(BUTTON1_PIN, GPIO_IN);
-    gpio_pull_up(BUTTON1_PIN);
-
+    //Button stuff
+    setupButton(OCT_UP);
+    setupButton(OCT_DOWN);
+    setupButton(TONE_SEL);
     lastClick = get_absolute_time();
     
-    gpio_set_irq_enabled_with_callback(BUTTON1_PIN, GPIO_IRQ_EDGE_FALL, true, &buttonIrq);
-    gpio_set_irq_enabled(BUTTON2_PIN, GPIO_IRQ_EDGE_FALL, true);
-    gpio_set_irq_enabled(BUTTON3_PIN, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled_with_callback(OCT_UP, GPIO_IRQ_EDGE_FALL, true, &buttonIrq);
+    gpio_set_irq_enabled(OCT_DOWN, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(TONE_SEL, GPIO_IRQ_EDGE_FALL, true);
 
     key_event_queue = xQueueCreate(20, sizeof(uint16_t));
 
