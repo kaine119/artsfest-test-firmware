@@ -96,8 +96,9 @@ static void handle_key_event(uint16_t key_event) {
     }
 }
 
-int16_t calculate_sample() {
-    int max_volume = 18000;
+int16_t calculate_sample(uint16_t adc_raw) {
+    int absolute_max_volume = 18000;
+    int max_volume = (adc_raw * absolute_max_volume) / 4095;
     static float vol = 0;
     static float freq = 880;
     uint mask;
@@ -161,22 +162,17 @@ void audio_task(void* params) {
 
     QueueHandle_t key_event_queue = (QueueHandle_t) params;
     uint16_t key_event;
-    int count = 0;
+
     while (true) {
-        if(++count >= 100){
-            uint16_t vol = adc_read();
-            printf("Vol: %d\n", vol);
-            // printf("\n");
-            count = 0;
-        }
         if (xQueueReceive(key_event_queue, &key_event, 0) == pdPASS) {
             handle_key_event(key_event);
         }
 
         struct audio_buffer *buffer = take_audio_buffer(ap, true);
         int16_t *samples = (int16_t *) buffer->buffer->bytes;
+        uint16_t adc_value = adc_read();
         for (uint i = 0; i < buffer->max_sample_count; i++) {
-            samples[i] = calculate_sample();
+            samples[i] = calculate_sample(adc_value);
         }
         buffer->sample_count = buffer->max_sample_count;
         give_audio_buffer(ap, buffer);
