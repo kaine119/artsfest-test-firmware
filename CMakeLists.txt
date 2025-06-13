@@ -46,6 +46,7 @@ target_link_libraries(artsfest-test PRIVATE
     FreeRTOS-Kernel-Heap4
     hardware_i2c
     pico_audio_i2s
+    hardware_adc
 )
 
 pico_enable_stdio_usb(artsfest-test 1)

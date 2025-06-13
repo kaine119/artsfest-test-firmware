@@ -10,7 +10,6 @@
 #define OCT_UP 18
 #define OCT_DOWN 19
 #define TONE_SEL 20
-#define VOL_PIN 29 
 
 #define DEBOUNCE_INT 50
 

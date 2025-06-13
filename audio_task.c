@@ -4,11 +4,14 @@
 #include "pico/audio.h"
 #include "pico/binary_info/code.h"
 #include <math.h>
+#include "hardware/adc.h"
 
 #include <FreeRTOS.h>
 #include <queue.h>
 
 #include <audio_task.h>
+
+#define VOL_PIN 29 
 
 const float FREQ_TABLE[12] = { 
     261.63, // C4
@@ -145,6 +148,12 @@ int16_t calculate_sample() {
 }
 
 void audio_task(void* params) {
+
+    //ADC stuff
+    adc_init();
+    adc_gpio_init(VOL_PIN); 
+    adc_select_input(0);
+    
     printf("[audio_task] Starting audio_task\n");
 
     struct audio_buffer_pool *ap = init_audio();
@@ -152,8 +161,14 @@ void audio_task(void* params) {
 
     QueueHandle_t key_event_queue = (QueueHandle_t) params;
     uint16_t key_event;
-
+    int count = 0;
     while (true) {
+        if(++count >= 100){
+            uint16_t vol = adc_read();
+            printf("Vol: %d\n", vol);
+            // printf("\n");
+            count = 0;
+        }
         if (xQueueReceive(key_event_queue, &key_event, 0) == pdPASS) {
             handle_key_event(key_event);
         }
