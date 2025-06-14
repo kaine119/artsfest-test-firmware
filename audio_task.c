@@ -144,8 +144,8 @@ int16_t calculate_sample(uint16_t adc_raw) {
         count = 0;
     }
     count++;
-    return round(vol * sinf(2 * M_PI * count / total_waveform_samples));
-    // return round(vol * (count / total_waveform_samples));
+    return round(vol * sinf(2 * M_PI * count / total_waveform_samples)); //sinwave
+    // return round(vol * (count / total_waveform_samples)); //sawtooth
 }
 
 void audio_task(void* params) {

@@ -34,9 +34,11 @@ void buttonIrq(uint gpio, uint32_t events) {
 
         //Check which button triggered the interupt
         if(gpio == OCT_UP){
-            printf("Octave up \n");
+            uint16_t oct_up = 128;
+            xQueueSend(key_event_queue, &oct_up, 0);
         }else if(gpio == OCT_DOWN){
-            printf("Octave down \n");
+            uint16_t oct_down = 64;
+            xQueueSend(key_event_queue, &oct_down, 0);
         }else if(gpio == TONE_SEL){
             printf("Tone change \n");
         }else{
