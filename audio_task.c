@@ -5,15 +5,19 @@
 #include "pico/binary_info/code.h"
 #include <math.h>
 #include "hardware/adc.h"
+#include "hardware/gpio.h"
 
 #include <FreeRTOS.h>
 #include <queue.h>
 
 #include <audio_task.h>
 
-#define VOL_PIN 29 
+#define VOL_PIN 26 
 
-const float FREQ_TABLE[12] = { 
+#define PIN_SPK_SHUTDOWN_N 1
+#define PIN_DAC_XSMT 9
+
+const float FREQ_TABLE[13] = { 
     261.63, // C4
     277.18, // C#4
     293.66, // D4
@@ -26,9 +30,10 @@ const float FREQ_TABLE[12] = {
     440,    // A4
     466,    // Bb4
     493.88, // B4
+    523.26  // C5
 };
 
-const uint8_t key_order[12] = {0, 1, 2, 3, 15, 14, 13, 12, 11, 10, 9, 8};
+const uint8_t key_order[13] = {0, 1, 2, 3, 15, 14, 13, 12, 11, 10, 9, 8, 7};
 
 static int8_t note_to_play = -1; // -1 if no notes
 static int octave = 0;
@@ -81,14 +86,14 @@ static void handle_key_event(uint16_t key_event) {
         octave_pressed = false;
         note_to_play = -1;
     }
-    else if ((key_event & (1 << 6)) && !octave_pressed) {
+    else if ((key_event & (1 << 5)) && !octave_pressed) {
         octave_pressed = true;
         octave -= 1;
-    } else if ((key_event & (1 << 7)) && !octave_pressed) {
+    } else if ((key_event & (1 << 6)) && !octave_pressed) {
         octave_pressed = true;
         octave += 1;
     } else {
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 13; i++) {
             if (key_event & (1 << key_order[i])) {
                 note_to_play = i;
             }
@@ -154,6 +159,14 @@ void audio_task(void* params) {
     adc_init();
     adc_gpio_init(VOL_PIN); 
     adc_select_input(0);
+
+    gpio_init(PIN_DAC_XSMT);
+    gpio_set_dir(PIN_DAC_XSMT, GPIO_OUT);
+    gpio_put(PIN_DAC_XSMT, true);
+
+    gpio_init(PIN_SPK_SHUTDOWN_N);
+    gpio_set_dir(PIN_SPK_SHUTDOWN_N, GPIO_OUT);
+    gpio_put(PIN_SPK_SHUTDOWN_N, true);
     
     printf("[audio_task] Starting audio_task\n");
 
