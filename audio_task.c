@@ -5,15 +5,19 @@
 #include "pico/binary_info/code.h"
 #include <math.h>
 #include "hardware/adc.h"
+#include "hardware/gpio.h"
 
 #include <FreeRTOS.h>
 #include <queue.h>
 
 #include <audio_task.h>
 
-#define VOL_PIN 29 
+#define VOL_PIN 26 
 
-const float FREQ_TABLE[12] = { 
+#define PIN_SPK_SHUTDOWN_N 1
+#define PIN_DAC_XSMT 9
+
+const float FREQ_TABLE[13] = {
     261.63, // C4
     277.18, // C#4
     293.66, // D4
@@ -26,12 +30,14 @@ const float FREQ_TABLE[12] = {
     440,    // A4
     466,    // Bb4
     493.88, // B4
+    523.26  // C5
 };
 
-const uint8_t key_order[12] = {0, 1, 2, 3, 15, 14, 13, 12, 11, 10, 9, 8};
+const uint8_t key_order[13] = {0, 1, 2, 3, 15, 14, 13, 12, 11, 10, 9, 8, 7};
 
 static int8_t note_to_play = -1; // -1 if no notes
 static int octave = 0;
+static int tone =0; // 0 = sine, 1 = sawtooth, 2 = triangle, 3 = square
 static bool octave_pressed = false;
 
 bi_decl(bi_3pins_with_names(PICO_AUDIO_I2S_DATA_PIN, "I2S DIN", PICO_AUDIO_I2S_CLOCK_PIN_BASE, "I2S BCK", PICO_AUDIO_I2S_CLOCK_PIN_BASE+1, "I2S LRCK"));
@@ -81,14 +87,16 @@ static void handle_key_event(uint16_t key_event) {
         octave_pressed = false;
         note_to_play = -1;
     }
-    else if ((key_event & (1 << 6)) && !octave_pressed) {
+    else if ((key_event & (1 << 5)) && !octave_pressed) {
         octave_pressed = true;
         octave -= 1;
-    } else if ((key_event & (1 << 7)) && !octave_pressed) {
+    } else if ((key_event & (1 << 6)) && !octave_pressed) {
         octave_pressed = true;
         octave += 1;
+    } else if((key_event & (1 << 7))){
+        if(++tone > 3){tone = 0;}
     } else {
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 13; i++) {
             if (key_event & (1 << key_order[i])) {
                 note_to_play = i;
             }
@@ -144,8 +152,24 @@ int16_t calculate_sample(uint16_t adc_raw) {
         count = 0;
     }
     count++;
-    return round(vol * sinf(2 * M_PI * count / total_waveform_samples)); //sinwave
-    // return round(vol * (count / total_waveform_samples)); //sawtooth
+    switch(tone){
+        case 0:
+            return round(vol * sinf(2 * M_PI * count / total_waveform_samples));//sinwave
+            break;
+        case 1:
+            return round(vol * (2*count / total_waveform_samples - 1)); //sawtooth
+            break;
+        case 2:
+            return round(vol * (1 - 2 * abs(2 * count / total_waveform_samples - 1))); //Triangle
+            break;
+        case 3:
+            return vol * (count / total_waveform_samples < 0.5) ? 1 : -1; //Square
+            break;
+        default:
+            tone = 0;
+            return round(vol * sinf(2 * M_PI * count / total_waveform_samples));//sinwave
+            break;
+    }
 }
 
 void audio_task(void* params) {
@@ -154,6 +178,14 @@ void audio_task(void* params) {
     adc_init();
     adc_gpio_init(VOL_PIN); 
     adc_select_input(0);
+    
+    gpio_init(PIN_DAC_XSMT);
+    gpio_set_dir(PIN_DAC_XSMT, GPIO_OUT);
+    gpio_put(PIN_DAC_XSMT, true);
+
+    gpio_init(PIN_SPK_SHUTDOWN_N);
+    gpio_set_dir(PIN_SPK_SHUTDOWN_N, GPIO_OUT);
+    gpio_put(PIN_SPK_SHUTDOWN_N, true);
     
     printf("[audio_task] Starting audio_task\n");
 

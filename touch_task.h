@@ -4,9 +4,9 @@
 #include <FreeRTOS.h>
 #include <queue.h>
 
-#define I2C_SDA_PIN PICO_DEFAULT_I2C_SDA_PIN
-#define I2C_SCL_PIN PICO_DEFAULT_I2C_SCL_PIN
-#define TOUCH_RST_PIN 15
+#define I2C_SDA_PIN 14
+#define I2C_SCL_PIN 15
+#define TOUCH_RST_PIN 13
 
 #define TOUCH_SLAVE_ADDR (0x37)
 

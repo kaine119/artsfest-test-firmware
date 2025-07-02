@@ -34,7 +34,7 @@ void touch_task(void *params) {
 }
 
 void touch_initialize_hw() {
-    i2c_init(i2c_default, 100000);
+    i2c_init(i2c1, 100000);
 
     gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
@@ -140,17 +140,17 @@ uint16_t touch_fetch_contacted_pads() {
 void touch_read_register(uint8_t reg_addr, uint8_t* rxdata, size_t size) {
     int write_result = PICO_ERROR_GENERIC;
     while (write_result == PICO_ERROR_GENERIC) {
-        write_result = i2c_write_blocking(i2c_default, TOUCH_SLAVE_ADDR, &reg_addr, 1, true);
+        write_result = i2c_write_blocking(i2c1, TOUCH_SLAVE_ADDR, &reg_addr, 1, true);
     }
-    i2c_read_blocking(i2c_default, TOUCH_SLAVE_ADDR, rxdata, size, false);
+    i2c_read_blocking(i2c1, TOUCH_SLAVE_ADDR, rxdata, size, false);
 }
 
 void touch_write_register(uint8_t reg_addr, uint8_t* txdata, size_t size) {
     int write_result = PICO_ERROR_GENERIC;
     while (write_result == PICO_ERROR_GENERIC) {
-        write_result = i2c_write_burst_blocking(i2c_default, TOUCH_SLAVE_ADDR, &reg_addr, 1);
+        write_result = i2c_write_burst_blocking(i2c1, TOUCH_SLAVE_ADDR, &reg_addr, 1);
     }
-    i2c_write_blocking(i2c_default, TOUCH_SLAVE_ADDR, txdata, size, false);
+    i2c_write_blocking(i2c1, TOUCH_SLAVE_ADDR, txdata, size, false);
 }
 
 void touch_write_ctrl_cmd(uint8_t cmd) {

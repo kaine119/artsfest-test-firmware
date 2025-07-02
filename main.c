@@ -7,9 +7,9 @@
 #include "task.h"
 
 //Pin allocations
-#define OCT_UP 18
-#define OCT_DOWN 19
-#define TONE_SEL 20
+#define OCT_UP 21
+#define OCT_DOWN 18
+#define TONE_SEL 22
 
 #define DEBOUNCE_INT 50
 
@@ -34,13 +34,26 @@ void buttonIrq(uint gpio, uint32_t events) {
 
         //Check which button triggered the interupt
         if(gpio == OCT_UP){
-            uint16_t oct_up = 128;
-            xQueueSend(key_event_queue, &oct_up, 0);
+            uint16_t oct_up = (1 << 6);
+            if(xQueueSend(key_event_queue, &oct_up, 0) != pdTRUE){
+                printf("oct up failed");
+            }else{
+                printf("oct up\n");
+            }
         }else if(gpio == OCT_DOWN){
-            uint16_t oct_down = 64;
-            xQueueSend(key_event_queue, &oct_down, 0);
+            uint16_t oct_down = (1 << 5);
+            if(xQueueSend(key_event_queue, &oct_down, 0) != pdTRUE){
+                printf("oct down failed");
+            }else{
+                printf("oct down\n");
+            }
         }else if(gpio == TONE_SEL){
-            printf("Tone change \n");
+            uint16_t tone_sel = (1 << 7);
+            if(xQueueSend(key_event_queue, &tone_sel, 0 != pdTRUE)){
+                printf("tone changed");
+            }else{
+                printf("tone change failed\n");
+            }
         }else{
             printf("Interupt \n");
         }
